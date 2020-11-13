@@ -1,0 +1,4 @@
+0 p>4b*p* p 
+1 p>4b*p*b*p* p
+2 b>4p*b* b 
+3 b>4p*b*p*b* b 

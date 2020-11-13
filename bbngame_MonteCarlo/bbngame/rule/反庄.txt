@@ -1,0 +1,3 @@
+0 pbbb p
+1 pbbbb p
+2 pbbbbb p

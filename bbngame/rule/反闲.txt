@@ -1,0 +1,3 @@
+0 bppp b
+1 bpppp b
+2 bppppp b
