@@ -1,0 +1,552 @@
+#pragma once
+#include<vector>
+#include"userdata.h"
+
+class Game {
+public:
+	Game(int x, int y) {
+
+		profit_Rect = CRect(x + 45, y, x + 9 * dis, y + word_height);
+		status_Rect = CRect(x + 9 * dis, y, x + width * dis, y + word_height);
+		bet_Rect = CRect(x, status_Rect.bottom + 3, x + 13 * dis, status_Rect.bottom + 3 + word_height);
+		tip_Rect = CRect(x + 13 * dis, status_Rect.bottom + 3, x + width * dis, status_Rect.bottom + 3 + word_height);
+
+		road_Rect = CRect(x, bet_Rect.bottom + 2,
+			x + width * dis, bet_Rect.bottom + 2 + height * dis);
+
+		//road_Rect = CRect(x, y,	x + width * dis, y + height * dis);
+	}
+
+	void draw_split(CDC* dc) {
+
+		CPen pen(PS_SOLID, 2, RGB(117, 116, 112));
+		CPen *oldpen = dc->SelectObject(&pen);
+
+		dc->MoveTo(road_Rect.left, status_Rect.bottom + 1);
+		dc->LineTo(status_Rect.right, status_Rect.bottom + 1);
+	}
+
+
+	void draw_table(CDC* dc) {
+
+		CPen pen(PS_SOLID, 2, RGB(117, 116, 112));
+		CPen *oldpen = dc->SelectObject(&pen);
+
+		for (int i = 0; i <= height; i++) {
+			dc->MoveTo(road_Rect.left, road_Rect.top + i * dis);
+			dc->LineTo(road_Rect.left + width * dis, road_Rect.top + i * dis);
+		}
+		for (int i = 0; i <= width; i++) {
+			dc->MoveTo(road_Rect.left + i * dis, road_Rect.top);
+			dc->LineTo(road_Rect.left + i * dis, road_Rect.top + height * dis);
+		}
+		dc->SelectObject(oldpen);
+	}
+
+	void draw_ans(CDC* dc, Round_t ans, int index) {
+
+		int x = index / height;
+		int y = index % height;
+
+		COLORREF color;
+		if (ans.cardAns == BANKER)
+			color = RGB(255, 51, 51);
+		else if (ans.cardAns == PLAYER)
+			color = RGB(0, 102, 255);
+		else
+			color = RGB(0, 204, 0);
+
+		CBrush brush;
+		brush.CreateSolidBrush(color);
+		CBrush *oldbrush = dc->SelectObject(&brush);
+		CRect rect(
+			road_Rect.left + x * dis + 1,
+			road_Rect.top + y * dis + 1,
+			road_Rect.left + (x + 1) * dis - 1,
+			road_Rect.top + (y + 1) * dis - 1);
+
+		dc->Ellipse(rect);
+		dc->SelectObject(oldbrush);
+
+
+		CPen pen(PS_SOLID, 2, RGB(255, 255, 255));
+		CPen *oldpen = dc->SelectObject(&pen);
+		COLORREF oldbc = dc->GetBkColor();
+		COLORREF oldtc = dc->GetTextColor();
+		dc->SetTextColor(RGB(234, 242, 255));
+		dc->SetBkColor(color);
+		CString str;
+		str.Format(_T("%d"), ans.cardNum);
+		dc->DrawText(str, rect, DT_SINGLELINE | DT_VCENTER | DT_CENTER);
+		dc->SelectObject(oldpen);
+		dc->SetTextColor(oldtc);
+		dc->SetBkColor(oldbc);
+	}
+
+
+
+	void draw_Road(CDC* dc, std::vector<Round_t> &road_map) {
+
+		draw_table(dc);
+		int pos = road_map.size() - 70;
+		if (road_map.size() < 70)
+			pos = road_map.size() - 1;
+		else
+			pos = 69;
+		for (int i = pos;  i >= 0; i--)
+			draw_ans(dc, road_map[i], pos - i );
+	}
+
+
+
+	void draw_profit(CDC* dc, float profit) {
+
+		CPen pen(PS_SOLID, 2, RGB(0, 0, 0));
+		CPen *oldpen = dc->SelectObject(&pen);
+		//COLORREF oldbc = dc->GetBkColor();
+		COLORREF oldtc = dc->GetTextColor();
+		//dc->SetTextColor(RGB(234, 242, 255));
+		//dc->SetBkColor(color);
+
+		char buf[512];
+		sprintf_s(buf, "收益:%-10.2f", profit);
+		CString str(buf);
+
+		dc->DrawText(
+			str,
+			profit_Rect,
+			DT_SINGLELINE | DT_VCENTER /*| DT_CENTER*/);
+		dc->SelectObject(oldpen);
+		dc->SetTextColor(oldtc);
+	}
+
+	void draw_status(CDC* dc, std::string status) {
+
+		dc->FillSolidRect(status_Rect, RGB(255, 255, 255));
+
+		CPen pen(PS_SOLID, 2, RGB(0, 0, 0));
+		CPen *oldpen = dc->SelectObject(&pen);
+		//COLORREF oldbc = dc->GetBkColor();
+		COLORREF oldtc = dc->GetTextColor();
+		//dc->SetTextColor(RGB(234, 242, 255));
+		//dc->SetBkColor(color);
+
+		char buf[512];
+		if (status.size() > 2)
+			sprintf_s(buf, "%s", status.c_str());
+		else
+			sprintf_s(buf, "%18s", status.c_str());
+		CString str(buf);
+
+		dc->DrawText(
+			str,
+			status_Rect,
+			DT_SINGLELINE | DT_VCENTER /*| DT_CENTER*/);
+		dc->SelectObject(oldpen);
+		dc->SetTextColor(oldtc);
+	}
+
+	void draw_bet(CDC* dc, int b1, int b2, int b3) {
+
+		CPen pen(PS_SOLID, 2, RGB(0, 0, 0));
+		CPen *oldpen = dc->SelectObject(&pen);
+		//COLORREF oldbc = dc->GetBkColor();
+		COLORREF oldtc = dc->GetTextColor();
+		//dc->SetTextColor(RGB(234, 242, 255));
+		//dc->SetBkColor(color);
+
+		char buf[512];
+
+		std::string temp;
+		if (b1 > 0)
+			sprintf_s(buf, "庄: %-10d", b1);
+		else
+			sprintf_s(buf, "庄:           ");
+		temp = buf;
+		if (b3 > 0)
+			sprintf_s(buf, " 和: %-10d", b3);
+		else
+			sprintf_s(buf, " 和:           ");
+		temp += buf;
+		if (b2 > 0)
+			sprintf_s(buf, " 闲: %-10d", b2);
+		else
+			sprintf_s(buf, " 闲:           ");
+		temp += buf;
+
+		//char buf[512];		
+		//sprintf_s(buf, "庄: %-10d 和: %-10d 闲: %-10d", b1, b3, b2);
+		CString str(temp.c_str());
+		dc->DrawText(
+			str,
+			bet_Rect,
+			DT_SINGLELINE | DT_VCENTER /*| DT_CENTER*/);
+		CBrush brush;
+		if (b1 > 0) {
+			brush.CreateSolidBrush(RGB(255, 0, 0));
+			CBrush *oldbrush = dc->SelectObject(&brush);
+			CRect rect(
+				tip_Rect.left,
+				tip_Rect.top + 1,
+				tip_Rect.right,
+				tip_Rect.bottom - 1);
+
+			dc->Ellipse(rect);
+			dc->SelectObject(oldbrush);
+		}
+		else if (b2 > 0) {
+			brush.CreateSolidBrush(RGB(0, 0, 255));
+			CBrush *oldbrush = dc->SelectObject(&brush);
+			CRect rect(
+				tip_Rect.left,
+				tip_Rect.top + 1,
+				tip_Rect.right,
+				tip_Rect.bottom - 1);
+
+			dc->Ellipse(rect);
+			dc->SelectObject(oldbrush);
+		}
+		else {
+			dc->FillSolidRect(tip_Rect, RGB(255, 255, 255));
+		}
+
+		dc->SelectObject(oldpen);
+		dc->SetTextColor(oldtc);
+		//dc->SetBkColor(oldbc);
+	}
+
+	CRect road_Rect;
+	CRect status_Rect;
+	CRect bet_Rect;
+	CRect profit_Rect;
+	CRect tip_Rect;
+
+private:
+	int word_height = 20;
+	int dis = 17;
+	int height = 6;
+	int width = 12;
+};
+
+class RoadMap {
+
+public:
+
+	void setRect(CRect rect) {
+		road_Rect = rect;
+		dis = rect.Height() / height;
+		width = rect.Width() / dis;
+		heightMod = rect.Height() - dis * height;
+		widthMod = rect.Width() - dis * width;
+		road_Rect.left = widthMod;
+		road_Rect.top = heightMod;
+	}
+
+	void draw_table(CDC* dc) {
+
+		CPen pen(PS_SOLID, 2, RGB(117, 116, 112));
+		CPen *oldpen = dc->SelectObject(&pen);
+
+		for (int i = 0; i <= height; i++) {
+			dc->MoveTo(road_Rect.left, road_Rect.top + i * dis);
+			dc->LineTo(road_Rect.left + width * dis, road_Rect.top + i * dis);
+		}
+		for (int i = 0; i <= width; i++) {
+			dc->MoveTo(road_Rect.left + i * dis, road_Rect.top);
+			dc->LineTo(road_Rect.left + i * dis, road_Rect.top + height * dis);
+		}
+		dc->SelectObject(oldpen);
+	}
+
+	void draw_ans(CDC* dc, Round_t ans, int index) {
+
+		int x = index / height;
+		int y = index % height;
+
+		COLORREF color;
+		if (ans.cardAns == BANKER)
+			color = RGB(255, 51, 51);
+		else if (ans.cardAns == PLAYER)
+			color = RGB(0, 102, 255);
+		else
+			color = RGB(0, 204, 0);
+
+		CBrush brush;
+		brush.CreateSolidBrush(color);
+		CBrush *oldbrush = dc->SelectObject(&brush);
+		CRect rect(
+			road_Rect.left + x * dis + 1,
+			road_Rect.top + y * dis + 1,
+			road_Rect.left + (x + 1) * dis - 1,
+			road_Rect.top + (y + 1) * dis - 1);
+
+		dc->Ellipse(rect);
+		dc->SelectObject(oldbrush);
+
+
+		CPen pen(PS_SOLID, 2, RGB(255, 255, 255));
+		CPen *oldpen = dc->SelectObject(&pen);
+		COLORREF oldbc = dc->GetBkColor();
+		COLORREF oldtc = dc->GetTextColor();
+		dc->SetTextColor(RGB(234, 242, 255));
+		dc->SetBkColor(color);
+		CString str;
+		str.Format(_T("%d"), ans.cardNum);
+		dc->DrawText(str, rect, DT_SINGLELINE | DT_VCENTER | DT_CENTER);
+		dc->SelectObject(oldpen);
+		dc->SetTextColor(oldtc);
+		dc->SetBkColor(oldbc);
+	}
+
+
+
+	void draw_Road(CDC* dc, std::vector<Round_t> &road_map) {
+
+		draw_table(dc);
+		int pos = road_map.size() - 66;
+		if (road_map.size() < 66)
+			pos = road_map.size() - 1;
+		else
+			pos = 65;
+		for (int i = pos; i >= 0; i--)
+			draw_ans(dc, road_map[i], pos - i);
+	}
+
+private:
+	CRect road_Rect;
+	int dis = 17;
+	int height = 6;
+	int width = 12;
+	int heightMod = 0;
+	int widthMod = 0;
+};
+
+
+
+#if 0
+class KlineImage {
+
+public:	
+
+	void setRect(CRect rect) {
+		imageRect.left = rect.left + 2;
+		imageRect.right = rect.right - 2;
+		imageRect.top = rect.top + 2;
+		imageRect.bottom = rect.bottom - 2;
+		imageSize = imageRect.Width() / div;
+		ctrlRect = rect;		
+	}	
+
+
+	int getKline(int blknum) {
+
+		int ret = gUserData->procer.getKline(data, blknum, imageSize);
+		if (ret == 0 || ret == oldPos) return 0;
+		oldPos = ret;
+		curMaxProfit = data[0].high;
+		curMinProfit = data[0].low;
+		winNum = data[0].win;
+		loseNum = data[0].lose;
+		for (int i = 1; i < data.size(); i++) {
+			if (curMaxProfit < data[i].high) curMaxProfit = data[i].high;
+			if (curMinProfit > data[i].low) curMinProfit = data[i].low;
+			winNum += data[i].win;
+			loseNum += data[i].lose;
+		}
+		if (curMaxProfit < baseMax) maxProfit = baseMax;
+		else maxProfit = curMaxProfit;
+		if (curMinProfit > baseMin) minProfit = baseMin;
+		else minProfit = curMinProfit;
+		
+		return 1;
+	}
+
+	int getAllKline(int blknum) {
+		gUserData->procer.getAllKline(data, blknum);
+		return data.size();
+	}
+
+	void getInfo(int start) {
+
+		curMaxProfit = data[start].high;
+		curMinProfit = data[start].low;
+		for (int i = start + 1; i < data.size(); i++) {
+			if (i - start >= imageSize) break;
+			if (curMaxProfit < data[i].high) curMaxProfit = data[i].high;
+			if (curMinProfit > data[i].low) curMinProfit = data[i].low;
+		}
+		if (curMaxProfit < baseMax) maxProfit = baseMax;
+		else maxProfit = curMaxProfit;
+		if (curMinProfit > baseMin) minProfit = baseMin;
+		else minProfit = curMinProfit;
+	}
+
+	void drawImage(CDC* dc, int start, int blknum, int avgNum) {
+
+		dc->FillSolidRect(ctrlRect, RGB(255, 255, 255));
+		curMaxProfit = 0;
+		curMinProfit = 0;
+		if (data.size() == 0) return;
+		getInfo(start);
+		//if (blknum == 1) drawSingle(dc);
+		//else drawKline(dc, start);
+		drawKline(dc, start);
+		drawAvg(dc, avgNum, start);
+	}	
+
+	float curMaxProfit=0.0;
+	float curMinProfit=0.0;
+	int winNum=0;
+	int loseNum=0;
+	int imageSize;
+
+private:
+	std::vector<Kline_t> data;
+	int oldPos = 0;
+
+	float baseMax = 100;
+	float baseMin = -100;
+	float maxProfit;
+	float minProfit;
+	
+	int div = 10;
+	int length = 7;
+	int mid = 3;
+
+	//int imageSize;
+	CRect imageRect;
+	CRect ctrlRect;
+
+	void dataToAxis(int index, float profit, int &x, int &y) {
+
+		x = imageRect.left + index * div;
+		y = int(imageRect.bottom - (profit - minProfit) * imageRect.Height() / (maxProfit - minProfit));
+	}
+
+	void drawSingle(CDC* dc) {		
+
+		CPen pen(PS_SOLID, 2, RGB(0, 0, 0));
+		CPen *oldpen = dc->SelectObject(&pen);
+		int prev_x, prev_y, now_x, now_y;
+
+		for (int i = 0; i < data.size(); i++) {
+			if (i == 0)	dataToAxis(i, data[i].end, prev_x, prev_y);
+			else {
+				dataToAxis(i, data[i].end, now_x, now_y);
+				dc->MoveTo(prev_x + mid, prev_y);
+				dc->LineTo(now_x + mid, now_y);
+				prev_x = now_x;
+				prev_y = now_y;
+			}
+		}
+		dc->SelectObject(oldpen);
+	}
+
+	void drawKline(CDC* dc, int start) {
+		
+		int start_x, start_y, end_x, end_y;
+		CRect rect;
+		int high_y, low_y;
+		
+		for (int i = 0; i < data.size(); i++) {
+
+			if (i >= imageSize) break;
+			dataToAxis(i, data[start + i].start, start_x, start_y);
+			dataToAxis(i, data[start + i].end, end_x, end_y);
+		
+			if (abs(start_y - end_y) <= 1) {
+				dc->MoveTo(start_x, start_y);
+				dc->LineTo(start_x + length, start_y);
+				high_y = low_y = start_y;
+			}
+			else if (start_y >= end_y) {
+				rect.left = end_x;
+				rect.top = end_y;
+				rect.right = rect.left + length;
+				rect.bottom = start_y;
+				dc->FillSolidRect(&rect, RGB(255, 0, 0));
+				high_y = end_y;
+				low_y = start_y;
+			}
+			else {
+				rect.left = start_x;
+				rect.top = start_y;
+				rect.right = rect.left + length;
+				rect.bottom = end_y;
+				dc->FillSolidRect(&rect, RGB(0, 255, 0));
+				high_y = start_y;
+				low_y = end_y;
+			}
+			/*if (start_y == end_y) {
+
+				dc->MoveTo(start_x, start_y);
+				dc->LineTo(start_x + length, start_y);
+				high_y = low_y = start_y;
+			}
+			else if (start_y < end_y) {
+
+				rect.left = start_x;
+				rect.top = start_y;
+				rect.right = rect.left + length;
+				rect.bottom = start_y +  end_y;
+				dc->FillSolidRect(&rect, RGB(0, 0, 255));
+				high_y = start_y;
+				low_y = end_y;
+			}
+			else {
+				rect.left = end_x;
+				rect.top = end_y;
+				rect.right = rect.left + length;
+				rect.bottom = end_y + start_y;
+				dc->FillSolidRect(&rect, RGB(255, 0, 0));
+				high_y = end_y;
+				low_y = start_y;
+			}*/
+
+			int x, y;
+			dataToAxis(i, data[start + i].high, x, y);
+			if (y < high_y) {
+				dc->MoveTo(x + mid, high_y);
+				dc->LineTo(x + mid, y);
+			}
+			dataToAxis(i, data[start + i].low, x, y);
+			if (y > low_y) {
+				dc->MoveTo(x + mid, y);
+				dc->LineTo(x + mid, low_y);
+			}
+		}
+	}
+
+	float getAvgLine(int index, int avgnum) {
+		int pos = index + 1 - avgnum;
+		if (pos < 0) pos = 0;
+		float total = 0;
+		int num = 0;
+		for (int i = pos; i <= index; i++) {
+			total += data[i].end;
+			num++;
+		}
+		return total / num;
+	}
+
+	void drawAvg(CDC* dc, int avgNum, int start) {
+
+		CPen pen(PS_SOLID, 1, RGB(0, 0, 255));
+		CPen *oldpen = dc->SelectObject(&pen);
+
+		int prev_x, prev_y, now_x, now_y;
+		for (int i = 0; i < data.size(); i++) {
+			if (i  >= imageSize) break;
+			if (i == 0) dataToAxis(i, getAvgLine(i + start, avgNum), prev_x, prev_y);
+			else {
+				dataToAxis(i, getAvgLine(i + start, avgNum), now_x, now_y);
+				dc->MoveTo(prev_x + mid, prev_y);
+				dc->LineTo(now_x + mid, now_y);
+				prev_x = now_x;
+				prev_y = now_y;
+			}
+		}
+		dc->SelectObject(oldpen);
+	}
+};
+#endif
